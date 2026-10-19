@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Problem–Measure Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: problems | measure wheel | measures — three equal-height panels, each scrolling inside */
+:root{
+  --bg:#F5F8FB; --panel:#FFFFFF; --ink:#102F5E; --ink-2:#52657A; --ink-3:#8A9AAD;
+  --line:#DCE6F1; --tile:#FFFFFF; --tile-ring:rgba(16,47,94,.14); --hub:#102F5E; --hub-ink:#FFFFFF; --soft:#EEF3F8;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+  --h:clamp(560px, calc(100vh - 200px), 940px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1626; --panel:#122036; --ink:#E6EEF8; --ink-2:#A7B6C9; --ink-3:#6E819A;
+  --line:#22344F; --tile:#FFFFFF; --tile-ring:rgba(255,255,255,.2); --hub:#E6EEF8; --hub-ink:#0C1626; --soft:#1A2B45; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1626; --panel:#122036; --ink:#E6EEF8; --ink-2:#A7B6C9; --ink-3:#6E819A;
+  --line:#22344F; --tile:#FFFFFF; --tile-ring:rgba(255,255,255,.2); --hub:#E6EEF8; --hub-ink:#0C1626; --soft:#1A2B45; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5;padding-block:22px 36px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3vw,36px);line-height:1.05;margin:4px 0 0}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:3px}
+.seg button{font:inherit;font-size:13.5px;border:0;background:none;color:var(--ink-2);padding:5px 14px;border-radius:8px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--line)}
+.seg .lab{font-size:12px;color:var(--ink-2);padding:5px 4px 5px 8px;font-family:var(--f-mono)}
+.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:9px;cursor:pointer}
+.selbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;min-height:40px;padding:7px 14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;font-size:14px}
+.pill{font-family:var(--f-mono);font-size:12px;padding:2px 9px;border-radius:999px;color:#fff;white-space:nowrap}
+.hint{color:var(--ink-2)}
+.selbar .btn{margin-left:auto;padding:4px 12px}
+.row3{display:grid;grid-template-columns:290px minmax(0,1fr) 330px;gap:14px;height:var(--h)}
+.row3>*{height:var(--h);min-width:0}
+.row3.noP{grid-template-columns:minmax(0,1fr) 340px}
+.row3.noP>[data-slot="problems"]{display:none}
+@media (max-width:1180px){.row3{grid-template-columns:250px minmax(0,1fr) 290px}}
+@media (max-width:900px){.row3,.row3.noP{grid-template-columns:minmax(0,1fr);height:auto}.row3>*{height:560px}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:auto;position:relative}
+.ph{position:sticky;top:0;z-index:2;background:var(--panel);padding:14px 14px 10px;border-bottom:1px solid var(--line)}
+.ph h2{margin:0;font-family:var(--f-display);font-size:18px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+.ph h2 small{font-family:var(--f-body);font-size:13px;font-weight:400;color:var(--ink-2)}
+.ph .hint{font-size:12.5px;margin-top:2px}
+.pb{padding:4px 10px 14px}
+.pcat{margin-top:6px}
+.pcat>h3{margin:0 0 2px}
+.pch{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;font:inherit;font-size:12px;font-family:var(--f-mono);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent);border:0;border-radius:8px;cursor:pointer;text-align:left}
+.pch:hover{background:color-mix(in srgb,var(--c) 18%,transparent)}
+.pch.on{background:var(--c);color:#fff}.pch.on .cnt{color:rgba(255,255,255,.85)}
+.pch .cnt{margin-left:auto;color:var(--ink-2)}
+.pr,.mi{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:baseline;width:100%;text-align:left;font:inherit;font-size:13.5px;line-height:1.3;
+  border:0;background:none;color:var(--ink);padding:4px 6px;border-radius:8px;cursor:pointer}
+.mi{grid-template-columns:auto minmax(0,1fr)}
+.pr:hover,.mi:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
+.pr .id,.mi .id{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-2);min-width:54px}
+.pr .n{font-family:var(--f-mono);font-size:11px;color:var(--ink-3)}
+.pr.on,.mi.on{background:var(--c);color:#fff}.pr.on .id,.pr.on .n,.mi.on .id{color:rgba(255,255,255,.85)}
+.pr.hit{box-shadow:inset 3px 0 0 var(--c);background:color-mix(in srgb,var(--c) 9%,transparent)}
+.pr.zero{opacity:.4}
+.ub{margin-top:6px}
+.mg{margin-top:6px}
+.gh{display:flex;align-items:center;gap:8px;margin:0 0 2px;padding:4px 6px;font:inherit;font-size:13.5px;font-weight:600;line-height:1.25;border-radius:8px;cursor:pointer;background:none;border:0;width:100%;text-align:left;color:inherit}
+.gh:hover{background:var(--soft)}
+.gh.uh{color:var(--c);font-family:var(--f-display);font-size:15px}
+.gh .cnt{margin-left:auto;font-family:var(--f-mono);font-size:11px;font-weight:400;color:var(--ink-2);white-space:nowrap}
+.ic{width:32px;height:32px;flex:none;background:var(--tile);border-radius:6px;display:grid;place-items:center;font-family:var(--f-mono);font-size:11px;color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c)}
+.ic img{width:32px;height:32px;border-radius:6px}
+.ic.round{width:34px;height:34px;border-radius:50%}.ic.round img{width:34px;height:34px;border-radius:50%}
+.crumbs{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:13px;color:var(--ink-2)}
+.crumbs .sep{color:var(--ink-3)}
+.crumb{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.stage{overflow:hidden;display:flex}
+.stage svg{width:100%;height:100%;display:block}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;padding:7px 10px;border-radius:8px;max-width:300px;opacity:0;transition:opacity .12s;z-index:10}
+.tip .id{font-family:var(--f-mono);font-size:11px;opacity:.75}
+svg text{font-family:var(--f-body)}
+.lbl{fill:var(--ink)}
+.lid{font-family:var(--f-mono);fill:var(--ink-3)}
+.fade{transition:opacity .2s}
+.dim{opacity:.1}
+.out{opacity:.07;pointer-events:none}
+.badge text{font-family:var(--f-mono);font-weight:500;fill:#fff}
+.dt{padding:18px;display:flex;flex-direction:column;gap:14px}
+.dhead{display:flex;gap:14px;align-items:center}
+.dhead h2{font-family:var(--f-display);font-size:21px;font-weight:600;line-height:1.15;margin:2px 0 0;text-wrap:balance}
+.big{width:64px;height:64px;flex:none;background:var(--tile);border-radius:14px}
+.big.round,.sm.round{border-radius:50%}
+.sm{width:34px;height:34px;flex:none;background:var(--tile);border-radius:8px}
+.noico{display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--c);box-shadow:inset 0 0 0 1.5px var(--c)}
+.big.noico{font-size:20px}
+.dlist{display:flex;flex-direction:column;gap:2px}
+.drow,.dgh{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;cursor:pointer;background:none;border:0;font:inherit;color:inherit;text-align:left;width:100%}
+.drow:hover,.dgh:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
+.drow .t,.dgh .t{flex:1;min-width:0;font-size:14px;line-height:1.3}
+.dgh .t{font-weight:600;font-size:13.5px}
+.drow .n,.dgh .n{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
+.bar{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--c)}
+.dgrp{display:flex;flex-direction:column;gap:1px}
+.mrow{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;padding:6px 8px;border-radius:8px;font:inherit;font-size:14px;line-height:1.3;cursor:pointer;background:none;border:0;color:inherit;text-align:left;width:100%}
+.mrow:hover,.mrow.on{background:color-mix(in srgb,var(--c) 14%,transparent)}
+.mid{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);padding-top:1px}
+.back{align-self:flex-start;background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--ink-2);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.note{font-size:12.5px;color:var(--ink-2);margin:0}
+button:focus-visible{outline:2px solid #2F80ED;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.fade,.tip{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">DANUBE4all · DSQ2 · WP7</div>
+      <h1>Problem–Measure Navigator</h1>
+    </div>
+    <div class="tools">
+      <div class="seg" role="group" aria-label="Project"><span class="lab">Project</span><button data-proj="D4A" aria-pressed="true">D4A</button><button data-proj="DSQ2" aria-pressed="false">DSQ2</button></div>
+      <button class="btn" id="ptog" aria-pressed="false">Hide problem list</button>
+    </div>
+  </header>
+  <div class="selbar" id="selbar"></div>
+  <section class="row3" id="row">
+    <div class="card" data-slot="problems"></div>
+    <div class="card stage" data-slot="radial"></div>
+    <div class="card" data-slot="measures"></div>
+  </section>
+  <p class="note" id="note"></p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+const PCOL={Flow:"#3F86B5",Flood:"#24598A",Drought:"#B08A2E",Sediment:"#C46E2E",Morphology:"#9C5638",Hydropower:"#B8484A",Ecology:"#3E8A55",Navigation:"#5F64A3"};
+const P=DATA.problems, PC=DATA.pcats, pById=Object.fromEntries(P.map(p=>[p.id,p]));
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const MPR={};DATA.upper.forEach(u=>u.groups.forEach(g=>g.measures.forEach(m=>MPR[m.id]=m.pr)));
+let root,N;
+function buildTree(){
+  const ups=DATA.upper.map(u=>({...u,kind:"upper",children:u.groups.map(g=>({...g,kind:"group",color:u.color,children:g.measures.filter(m=>m.pr.includes(proj)).map(m=>({...m,kind:"measure",color:u.color}))})).filter(g=>g.children.length)})).filter(u=>u.children.length);
+  root=d3.hierarchy({name:"D4A",kind:"root",children:ups});N={};root.each(n=>{if(n.depth)N[n.data.kind+":"+n.data.id]=n;});}
+const find=s=>s&&N[s.type+":"+s.id];
+
+/* --- STATE --- */
+let sel=null, proj="D4A", PM={}, mToP={};
+const inP=id=>MPR[id].includes(proj);
+const liveLeaves=n=>n.leaves().filter(l=>inP(l.data.id));
+function derive(){PM={};mToP={};P.forEach(p=>{PM[p.id]=p.m.filter(inP);PM[p.id].forEach(m=>(mToP[m]=mToP[m]||[]).push(p.id));});}
+function measuresOf(s){if(!s)return null;
+  if(s.type==="problem")return new Set(PM[s.id]);
+  if(s.type==="pcat"){const o=new Set();P.filter(p=>p.cat===s.id).forEach(p=>PM[p.id].forEach(m=>o.add(m)));return o;}
+  return new Set(liveLeaves(find(s)).map(l=>l.data.id));}
+function problemsOf(s){if(!s)return null;
+  if(s.type==="problem")return new Set([s.id]);
+  if(s.type==="pcat")return new Set(P.filter(p=>p.cat===s.id).map(p=>p.id));
+  const o=new Set();measuresOf(s).forEach(m=>(mToP[m]||[]).forEach(p=>o.add(p)));return o;}
+function weight(id){if(!sel||sel.type!=="pcat")return 1;return (mToP[id]||[]).filter(p=>pById[p].cat===sel.id).length;}
+const views=[];
+function render(){views.forEach(v=>v());}
+function setSel(s){sel=s;render();}
+function same(a,b){return a&&b&&a.type===b.type&&String(a.id)===String(b.id);}
+function toggle(s){setSel(same(sel,s)?null:s);}
+function selValid(){if(!sel)return true;if(sel.type==="problem"||sel.type==="pcat")return true;return !!find(sel);}
+function setProj(p){proj=p;buildTree();derive();document.querySelectorAll("[data-proj]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.proj===p));if(!selValid())sel=null;render();}
+function onPath(n){
+  const ms=measuresOf(sel); if(!ms)return true;
+  if(sel.type==="problem"||sel.type==="pcat")return n.depth===0||n.leaves().some(l=>ms.has(l.data.id));
+  const t=find(sel); return n.depth===0||t.ancestors().includes(n)||t.descendants().includes(n);}
+function label(s){if(s.type==="problem")return s.id;if(s.type==="pcat")return s.id;const n=find(s);return n.data.kind==="measure"?n.data.id:n.data.kind==="group"?"Group "+n.data.id:"Category "+n.data.id;}
+
+const tip=document.getElementById("tip");
+function showTip(ev,html){tip.innerHTML=html;let x=ev.clientX+14,y=ev.clientY+14;if(x>innerWidth-320)x-=330;tip.style.left=x+"px";tip.style.top=y+"px";tip.style.opacity=1;}
+function hideTip(){tip.style.opacity=0;}
+function nodeTip(n){const d=n.data;if(d.kind==="measure")return `<div class="id">${d.id} · ${(mToP[d.id]||[]).length} problems</div>${esc(d.name)}`;
+  return `<div class="id">${d.kind==="group"?"Group "+d.id:"Category "+d.id} · ${liveLeaves(n).length} measures</div>${esc(d.name)}`;}
+function scrollWithin(box,el){const a=el.getBoundingClientRect(),b=box.getBoundingClientRect(),ph=box.querySelector(".ph");box.scrollTo({top:box.scrollTop+a.top-b.top-(ph?ph.offsetHeight:0)-8});}
+
+/* --- PROBLEMS PANEL --- */
+function problemsPanel(el){
+  el.innerHTML=`<div class="ph"><h2>Problems <small>by problem category</small></h2><div class="hint" data-h></div></div><div class="pb" data-b></div>`;
+  const b=el.querySelector("[data-b]"),h=el.querySelector("[data-h]");
+  b.innerHTML=PC.map(c=>`<div class="pcat" data-c="${c}" style="--c:${PCOL[c]}"><h3><button class="pch" data-pc="${c}">${c}<span class="cnt" data-cnt></span></button></h3>
+    ${P.filter(p=>p.cat===c).map(p=>`<button class="pr" data-p="${p.id}" style="--c:${PCOL[c]}"><span class="id">${p.id}</span><span>${esc(p.name)}</span><span class="n" data-n></span></button>`).join("")}</div>`).join("");
+  b.querySelectorAll(".pr").forEach(x=>x.onclick=()=>toggle({type:"problem",id:x.dataset.p}));
+  b.querySelectorAll(".pch").forEach(x=>x.onclick=()=>toggle({type:"pcat",id:x.dataset.pc}));
+  views.push(()=>{
+    const filt=sel&&sel.type!=="problem"&&sel.type!=="pcat", ps=filt?problemsOf(sel):null;
+    b.querySelectorAll(".pr").forEach(x=>{const id=x.dataset.p,k=PM[id].length;
+      x.querySelector("[data-n]").textContent=k; x.classList.toggle("zero",k===0);
+      x.hidden=!!ps&&!ps.has(id);
+      x.classList.toggle("on",!!sel&&sel.type==="problem"&&sel.id===id);
+      x.classList.toggle("hit",!!sel&&sel.type==="pcat"&&pById[id].cat===sel.id);});
+    b.querySelectorAll(".pcat").forEach(c=>{const all=P.filter(p=>p.cat===c.dataset.c),k=ps?all.filter(p=>ps.has(p.id)).length:all.length;
+      c.hidden=k===0;c.querySelector("[data-cnt]").textContent=ps?`${k} of ${all.length}`:all.length;
+      c.querySelector(".pch").classList.toggle("on",!!sel&&sel.type==="pcat"&&sel.id===c.dataset.c);});
+    if(filt){h.innerHTML=`Showing only the <b>${ps.size}</b> problems linked to ${label(sel).replace(/^Group|^Category/,m=>m.toLowerCase())}.`;el.scrollTop=0;}
+    else if(sel&&sel.type==="pcat")h.textContent="Click a single problem to narrow it down.";
+    else h.textContent=sel?"Click another problem, or a category header.":`${P.length} problems. Pick a problem or a whole category.`;
+    const on=b.querySelector(".pr.on, .pch.on");if(on){const a=on.getBoundingClientRect(),r=el.getBoundingClientRect();if(a.top<r.top+80||a.bottom>r.bottom)scrollWithin(el,on);}
+  });
+}
+
+/* --- WHEEL --- */
+function wheel(el){
+  const S=1330,HUB=112,rU=172,rG=286,rL=382,iU=52,iG=42;
+  let built=null,pt,icons,dots,lbls,ws,links,gB,hubC,hubT;
+  function build(){
+  el.innerHTML="";
+  d3.cluster().size([2*Math.PI,1]).separation((a,b)=>a.parent===b.parent?1:(a.parent.parent===b.parent.parent?3.8:6.5))(root);
+  const rad={0:0,1:rU,2:rG,3:rL};root.each(n=>n.r=rad[n.depth]);
+  pt=n=>[n.r*Math.sin(n.x),-n.r*Math.cos(n.x)];
+  const svg=d3.select(el).append("svg").attr("viewBox",[-S/2,-S/2,S,S]).attr("role","img").attr("aria-label","Radial tree of D4A measures");
+  const gW=svg.append("g"),gL=svg.append("g").attr("fill","none"),gN=svg.append("g"),gT=svg.append("g");gB=svg.append("g");
+  const nG=root.descendants().filter(n=>n.depth===2).length,nU=root.children.length;const half=Math.PI/(root.leaves().length+(nG-nU)*2.8+nU*5.5)*1.1,W=[];
+  root.children.forEach(u=>{const lv=u.leaves(),a0=lv[0].x-half,a1=lv[lv.length-1].x+half;
+    W.push(gW.append("path").datum(u).attr("class","fade").attr("d",d3.arc()({innerRadius:HUB+6,outerRadius:rL+6,startAngle:a0,endAngle:a1})).attr("fill",u.data.color).attr("fill-opacity",.07).node());
+    W.push(gW.append("path").datum(u).attr("class","fade").attr("d",d3.arc()({innerRadius:rL-20,outerRadius:rL-13,startAngle:a0,endAngle:a1,cornerRadius:3})).attr("fill",u.data.color).node());
+    u.children.forEach(g=>{const gl=g.leaves();W.push(gW.append("path").datum(g).attr("class","fade").attr("d",d3.arc()({innerRadius:rG+26,outerRadius:rL-28,startAngle:gl[0].x-half*.8,endAngle:gl[gl.length-1].x+half*.8,cornerRadius:6})).attr("fill",u.data.color).attr("fill-opacity",.1).node());});});
+  ws=d3.selectAll(W);
+  const lg=d3.linkRadial().angle(d=>d.x).radius(d=>d.r);
+  links=gL.selectAll("path").data(root.links()).join("path").attr("class","fade")
+    .attr("d",l=>lg({source:{x:l.source.x,r:l.source.depth?l.source.r:HUB},target:{x:l.target.x,r:l.target.depth===3?rL-28:l.target.r}}))
+    .attr("stroke",l=>l.target.data.color).attr("stroke-opacity",l=>l.target.depth===3?.45:.75).attr("stroke-width",l=>l.target.depth===1?3.2:l.target.depth===2?2:1.1);
+  const hub=gN.append("g").style("cursor","pointer").on("click",()=>setSel(null));
+  hubC=hub.append("circle").attr("r",HUB);hubT=hub.append("text").attr("text-anchor","middle");
+  icons=gN.selectAll("g.ic").data(root.descendants().filter(n=>n.depth===1||n.depth===2)).join("g").attr("class","fade").attr("transform",n=>`translate(${pt(n)})`).style("cursor","pointer");
+  icons.each(function(n){const s=n.depth===1?iU:iG,g=d3.select(this);
+    if(n.depth===1)g.append("circle").attr("r",s/2+5).attr("fill","var(--tile)").attr("stroke",n.data.color).attr("stroke-width",2.5);
+    else g.append("rect").attr("x",-s/2-3).attr("y",-s/2-3).attr("width",s+6).attr("height",s+6).attr("rx",8).attr("fill","var(--tile)").attr("stroke",n.data.icon?"var(--tile-ring)":n.data.color).attr("stroke-width",n.data.icon?1:1.5);
+    if(n.data.icon)g.append("image").attr("href",n.data.icon).attr("x",-s/2).attr("y",-s/2).attr("width",s).attr("height",s);
+    else g.append("text").attr("text-anchor","middle").attr("dy","0.35em").attr("fill",n.data.color).style("font-family","var(--f-mono)").style("font-size","14px").text(n.data.id);
+    if(n.depth===1)g.append("text").attr("y",-s/2-12).attr("text-anchor","middle").attr("fill",n.data.color).style("font-family","var(--f-display)").style("font-weight",700).style("font-size","15px").text(n.data.id);});
+  const lv=root.leaves();
+  dots=gN.selectAll("circle.lf").data(lv).join("circle").attr("class","fade").attr("cx",n=>pt(n)[0]).attr("cy",n=>pt(n)[1]).attr("r",4.2).attr("fill",n=>n.data.color).attr("stroke","var(--panel)").attr("stroke-width",1.5).style("cursor","pointer");
+  lbls=gT.selectAll("text").data(lv).join("text").attr("class","lbl fade").style("cursor","pointer").attr("dy","0.33em").style("font-size","12.5px")
+    .attr("transform",n=>`rotate(${n.x*180/Math.PI-90}) translate(${rL+10},0) ${n.x>=Math.PI?"rotate(180)":""}`).attr("text-anchor",n=>n.x>=Math.PI?"end":"start");
+  lbls.each(function(n){const t=d3.select(this),nm=n.data.name.length>32?n.data.name.slice(0,30).trimEnd()+"…":n.data.name;
+    if(n.x>=Math.PI){t.append("tspan").text(nm+"  ");t.append("tspan").attr("class","lid").style("font-size","11px").text(n.data.id);}
+    else{t.append("tspan").attr("class","lid").style("font-size","11px").text(n.data.id+"  ");t.append("tspan").text(nm);}});
+  [icons,dots,lbls].forEach(s=>s.on("mousemove",(ev,n)=>showTip(ev,nodeTip(n))).on("mouseleave",hideTip).on("click",(ev,n)=>toggle({type:n.data.kind,id:n.data.id})));
+  }
+  function wrap(s,n){const w=s.split(" "),o=[];let c="";w.forEach(x=>{if((c+" "+x).trim().length>n){o.push(c);c=x}else c=(c+" "+x).trim()});o.push(c);return o.length>4?[...o.slice(0,3),o[3]+"…"]:o;}
+  function hubText(lines){hubT.selectAll("*").remove();const lh=22,y0=-(lines.length-1)*lh/2;lines.forEach((l,i)=>hubT.append("tspan").attr("x",0).attr("y",y0+i*lh+6).attr("fill",l.c||"#fff").style("font-size",l.s+"px").style("font-weight",l.w||400).style("font-family",l.f||"var(--f-body)").text(l.t));}
+  views.push(()=>{
+    if(built!==proj){build();built=proj;}
+    const ms=measuresOf(sel), out=n=>liveLeaves(n).length===0, on=n=>onPath(n);
+    icons.classed("out",out).classed("dim",n=>!out(n)&&!on(n));
+    dots.classed("out",out).classed("dim",n=>!out(n)&&!on(n)).attr("r",4.2);
+    lbls.classed("out",out).classed("dim",n=>!out(n)&&!on(n));
+    ws.classed("dim",n=>out(n)||!on(n)); links.classed("dim",l=>out(l.target)||!(on(l.target)&&on(l.source)));
+    gB.selectAll("*").remove();
+    if(sel&&(sel.type==="problem"||sel.type==="pcat"))icons.filter(n=>n.depth===2&&on(n)).each(n=>{const k=n.leaves().filter(l=>ms.has(l.data.id)).length,[x,y]=pt(n);
+      const g=gB.append("g").attr("class","badge").attr("transform",`translate(${x+iG/2+3},${y-iG/2-3})`);g.append("circle").attr("r",10).attr("fill",n.data.color).attr("stroke","var(--panel)").attr("stroke-width",2);g.append("text").attr("text-anchor","middle").attr("dy","0.35em").style("font-size","11px").text(k);});
+    if(!sel){hubC.attr("fill","var(--hub)");hubText([{t:"D4A",s:36,w:700,f:"var(--f-display)",c:"var(--hub-ink)"},{t:"pick a problem",s:15,c:"var(--hub-ink)"},{t:"or a measure",s:15,c:"var(--hub-ink)"}]);}
+    else if(sel.type==="problem"){const p=pById[sel.id];hubC.attr("fill",PCOL[p.cat]);hubText([{t:p.id,s:14,f:"var(--f-mono)"},...wrap(p.name,14).map(t=>({t,s:19,w:600})),{t:ms.size+" measures",s:14}]);}
+    else if(sel.type==="pcat"){hubC.attr("fill",PCOL[sel.id]);hubText([{t:"Problem category",s:14,f:"var(--f-mono)"},{t:sel.id,s:24,w:600},{t:problemsOf(sel).size+" problems",s:14},{t:ms.size+" measures",s:14}]);}
+    else{const n=find(sel);hubC.attr("fill",n.data.color);hubText([{t:label(sel),s:14,f:"var(--f-mono)"},...wrap(n.data.name,14).map(t=>({t,s:19,w:600})),{t:problemsOf(sel).size+" problems",s:14}]);}
+  });
+}
+
+/* --- MEASURES PANEL --- */
+const icon=(n,cls)=>n.data.icon?`<img class="${cls}" src="${n.data.icon}" alt="">`:`<span class="${cls} noico" style="--c:${n.data.color}">${n.data.id}</span>`;
+function head(n,eyebrow,title){return `<div class="dhead">${icon(n,n.depth===1?"big round":"big")}<div><div class="eyebrow" style="color:${n.data.color}">${eyebrow}</div><h2>${esc(title)}</h2></div></div>`;}
+function catRow(u,max){const k=u.leaves().length;return `<button class="drow" data-u="${u.data.id}" style="--c:${u.data.color}">${icon(u,"sm round")}<span class="t"><b style="color:${u.data.color}">${u.data.id}</b> ${esc(u.data.name)}<span class="bar"><i style="width:${k/max*100}%"></i></span></span><span class="n">${k}</span></button>`;}
+function grpRow(g){return `<button class="drow" data-g="${g.data.id}" style="--c:${g.data.color}">${icon(g,"sm")}<span class="t">${g.data.id}. ${esc(g.data.name)}</span><span class="n">${g.leaves().length}</span></button>`;}
+function mRow(m,on){return `<button class="mrow${on?" on":""}" data-m="${m.data.id}" style="--c:${m.data.color}"><span class="mid">${m.data.id}</span><span>${esc(m.data.name)}</span></button>`;}
+function crumbs(){
+  if(!sel)return "";
+  const c=[`<button class="crumb" data-all>All categories</button>`];
+  if(sel.type!=="problem"&&sel.type!=="pcat"){const n=find(sel),a=n.ancestors().reverse().slice(1);
+    a.slice(0,-1).forEach(x=>c.push(`<button class="crumb" data-${x.depth===1?"u":"g"}="${x.data.id}">${x.depth===1?"Category "+x.data.id:"Group "+x.data.id}</button>`));}
+  return `<nav class="crumbs">${c.join('<span class="sep">/</span>')}</nav>`;
+}
+function measuresPanel(el){
+  views.push(()=>{
+    let h="";
+    if(!sel){const max=d3.max(root.children,u=>u.leaves().length);
+      h=`<div class="dhead"><div><div class="eyebrow">Measures</div><h2>Measure categories</h2></div></div><div class="dlist">${root.children.map(u=>catRow(u,max)).join("")}</div>`;}
+    else if(sel.type==="problem"||sel.type==="pcat"){const ms=measuresOf(sel);const gs=root.descendants().filter(n=>n.depth===2&&n.leaves().some(l=>ms.has(l.data.id)));
+      const col=sel.type==="problem"?PCOL[pById[sel.id].cat]:PCOL[sel.id];
+      h=`<div class="dhead"><div><div class="eyebrow" style="color:${col}">${sel.type==="problem"?sel.id+" · "+pById[sel.id].cat:"Problem category"}</div><h2>${esc(sel.type==="problem"?pById[sel.id].name:sel.id)}</h2></div></div>
+        ${gs.map(g=>`<div class="dgrp"><button class="dgh" data-g="${g.data.id}" style="--c:${g.data.color}">${icon(g,"sm")}<span class="t">${g.data.id}. ${esc(g.data.name)}</span><span class="n">${g.leaves().filter(l=>ms.has(l.data.id)).length} of ${g.leaves().length}</span></button>
+          ${g.leaves().filter(l=>ms.has(l.data.id)).map(m=>mRow(m,false)).join("")}</div>`).join("")}`;}
+    else{const n=find(sel);
+      if(n.depth===1)h=head(n,"Category "+n.data.id,n.data.name)+`<div class="dlist">${n.children.map(grpRow).join("")}</div>`;
+      else{const g=n.depth===3?n.parent:n,u=g.parent;
+        h=head(g,`Group ${g.data.id} · Category ${u.data.id}`,g.data.name)+`<div class="dlist">${g.leaves().map(m=>mRow(m,m===n)).join("")}</div>`;}}
+    el.innerHTML=`<div class="dt">${crumbs()}${h}</div>`;
+    el.querySelectorAll("[data-all]").forEach(b=>b.onclick=()=>setSel(null));
+    el.scrollTop=0;
+    el.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>toggle({type:"measure",id:b.dataset.m}));
+    el.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>toggle({type:"group",id:+b.dataset.g}));
+    el.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>setSel({type:"upper",id:b.dataset.u}));
+    el.querySelectorAll("[data-back]").forEach(b=>b.onclick=()=>setSel({type:"upper",id:b.dataset.back}));
+  });
+}
+
+/* --- SELECTION BAR + NOTE --- */
+const bar=document.getElementById("selbar"),note=document.getElementById("note");
+views.push(()=>{
+  const total=root.leaves().filter(l=>inP(l.data.id)).length;
+  note.textContent=`${proj}: ${total} of 95 measures${proj==="DSQ2"?" (D4A-only measures are left out)":""}. Data: grouping file and matrix fin1. Group 18 sits under category C for now and has no icon yet.`;
+  if(!sel){bar.innerHTML=`<span class="hint">Nothing selected. Pick a problem or problem category, or a measure category, group or measure.</span>`;return;}
+  let pill,t,x;
+  if(sel.type==="problem"){const p=pById[sel.id];pill=`<span class="pill" style="background:${PCOL[p.cat]}">${p.id}</span>`;t=esc(p.name);x=`${PM[p.id].length} measures`;}
+  else if(sel.type==="pcat"){pill=`<span class="pill" style="background:${PCOL[sel.id]}">Problem category</span>`;t=esc(sel.id);x=`${problemsOf(sel).size} problems · ${measuresOf(sel).size} measures`;}
+  else{const n=find(sel);pill=`<span class="pill" style="background:${n.data.color}">${label(sel)}</span>`;t=esc(n.data.name);x=`${problemsOf(sel).size} problems`;}
+  bar.innerHTML=`${pill}<b>${t}</b><span class="hint">${x}</span><button class="btn" id="clr">Clear</button>`;document.getElementById("clr").onclick=()=>setSel(null);
+});
+
+/* --- MOUNT --- */
+buildTree();derive();
+problemsPanel(document.querySelector('[data-slot="problems"]'));
+wheel(document.querySelector('[data-slot="radial"]'));
+measuresPanel(document.querySelector('[data-slot="measures"]'));
+document.querySelectorAll("[data-proj]").forEach(b=>b.onclick=()=>{setProj(b.dataset.proj);try{localStorage.setItem("d4a-proj",b.dataset.proj)}catch(e){}});
+const row=document.getElementById("row"),pt=document.getElementById("ptog");
+function setP(hide){row.classList.toggle("noP",hide);pt.textContent=hide?"Show problem list":"Hide problem list";pt.setAttribute("aria-pressed",hide);try{localStorage.setItem("d4a-hideP",hide?"1":"0")}catch(e){}}
+pt.onclick=()=>setP(!row.classList.contains("noP"));
+let h0=false,p0="D4A";try{h0=localStorage.getItem("d4a-hideP")==="1";p0=localStorage.getItem("d4a-proj")||"D4A"}catch(e){}
+setP(h0); setProj(p0==="DSQ2"?"DSQ2":"D4A");
+})();
+</script>
+
+</body>
+</html>
